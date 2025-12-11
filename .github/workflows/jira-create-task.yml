@@ -10,24 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # -------------------------
-      # Extract Commit Message
-      # -------------------------
       - name: Extract Commit Message
         run: |
-          echo "===== DEBUG: Commit Message ====="
-          echo "Raw commit message: ${{ github.event.head_commit.message }}"
           echo "COMMIT_MSG=${{ github.event.head_commit.message }}" >> $GITHUB_ENV
-          echo "Saved COMMIT_MSG to env."
-          echo "================================="
 
-      # -------------------------
-      # Debug Jira Secrets
-      # -------------------------
       - name: Debug Jira Secrets
         run: |
           echo "===== DEBUG: Jira Secrets ====="
@@ -36,40 +25,21 @@ jobs:
           echo "JIRA_API_TOKEN  = '******** (hidden)'"
           echo "Full Jira URL   = https://${{ secrets.JIRA_SITE }}/rest/api/3/issue"
           echo "================================"
-          secrets.JIRA_SITE=https://sivapriyavivekkumar.atlassian.net
-          secrets.JIRA_EMAIL='sivapriya.vivekkumar@gmail.com'
-          secrets.JIRA_API_TOKEN='113a242a828660bdf83248e51b0ae16e71'
-      
-      # -------------------------
-      # Validate Host Resolution
-      # -------------------------
-      - name: Validate DNS Resolution
-        run: |
-          echo "===== DEBUG: DNS Lookup ====="
-          echo "Checking DNS for: ${{ secrets.JIRA_SITE }}"
-          nslookup ${{ secrets.JIRA_SITE }} || echo "DNS lookup failed!"
-          echo "=============================="
 
-      # -------------------------
-      # Create Jira Issue via API
-      # -------------------------
-      - name: Create Jira Issue (REST API)
+      - name: Create Jira Task via REST API
         run: |
-          echo "===== DEBUG: CURL REQUEST ====="
-          echo "JIRA_EMAIL      = '${{ secrets.JIRA_EMAIL }}"
-          echo "POST URL: https://${{ secrets.JIRA_SITE }}/rest/api/3/issue"
-          echo "Commit Message: $COMMIT_MSG"
-          echo "================================"
+          echo "Creating Jira Issue..."
+          echo "Commit Message = $COMMIT_MSG"
+          echo "POST URL = https://${{ secrets.JIRA_SITE }}/rest/api/3/issue"
 
-          curl -v -X POST \
+          curl -X POST "https://${{ secrets.JIRA_SITE }}/rest/api/3/issue" \
             -H "Content-Type: application/json" \
             -u "${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_API_TOKEN }}" \
             --data "{
               \"fields\": {
                 \"project\": { \"key\": \"SCRUM\" },
-                \"summary\": \"Auto-created from GitHub commit: $COMMIT_MSG\",
-                \"description\": \"This task was automatically generated from commit: $COMMIT_MSG\",
+                \"summary\": \"Auto Issue: $COMMIT_MSG\",
+                \"description\": \"Automatically created from GitHub commit.\",
                 \"issuetype\": { \"name\": \"Task\" }
               }
-            }" \
-            "https://${{ secrets.JIRA_SITE }}/rest/api/3/issue"
+            }"
