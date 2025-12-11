@@ -53,6 +53,7 @@ jobs:
       - name: Create Jira Issue (REST API)
         run: |
           echo "===== DEBUG: CURL REQUEST ====="
+          echo "JIRA_EMAIL      = '${{ secrets.JIRA_EMAIL }}"
           echo "POST URL: https://${{ secrets.JIRA_SITE }}/rest/api/3/issue"
           echo "Commit Message: $COMMIT_MSG"
           echo "================================"
