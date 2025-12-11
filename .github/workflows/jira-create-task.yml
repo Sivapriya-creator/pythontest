@@ -36,7 +36,7 @@ jobs:
           echo "JIRA_API_TOKEN  = '******** (hidden)'"
           echo "Full Jira URL   = https://${{ secrets.JIRA_SITE }}/rest/api/3/issue"
           echo "================================"
-          secrets.JITA_SITE=https://sivapriyavivekkumar-1765451665029.atlassian.net
+          secrets.JITA_SITE=https://sivapriyavivekkumar.atlassian.net
           secrets.JIRA_EMAIL='sivapriya.vivekkumar@gmail.com'
           secrets.JIRA_API_TOKEN='113a242a828660bdf83248e51b0ae16e71'
       
