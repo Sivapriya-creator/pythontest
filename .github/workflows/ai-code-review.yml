@@ -1,0 +1,64 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get PR diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github.diff" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" \
+            -o pr.diff
+          head -c 100000 pr.diff > pr.trimmed.diff
+
+      - name: Run AI review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DIFF_CONTENT=$(cat pr.trimmed.diff)
+          jq -n \
+            --arg system "You are a senior software engineer performing a code review. Review the following git diff. Point out bugs, security issues, performance problems, and style concerns. Be concise and reference specific files and lines. If the code looks good, say so." \
+            --arg user "$DIFF_CONTENT" \
+            '{
+              model: "openai/gpt-4o-mini",
+              messages: [
+                { role: "system", content: $system },
+                { role: "user", content: $user }
+              ],
+              temperature: 0.2
+            }' > payload.json
+
+          RESPONSE=$(curl -sL -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://models.github.ai/inference/chat/completions" \
+            -d @payload.json)
+
+          echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
+
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          jq -n --arg body "## 🤖 AI Code Review
+
+$(cat review.md)" '{ body: $body }' > comment.json
+
+          curl -sL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -d @comment.json
