@@ -51,7 +51,7 @@ jobs:
           echo "=== Raw response ==="
           echo "$RESPONSE"
 
-          echo "$RESPONSE" | jq -r '.choices[0].message.content // "AI review could not be generated. Check the workflow logs for the raw API response."' > review.md
+          echo "$RESPONSE" | jq -r '.choices[0].message.content // "AI review could not be generated. Check logs for the raw API response."' > review.md
 
       - name: Post review comment
         env:
