@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  models: read
 
 jobs:
   ai-review:
@@ -26,7 +25,7 @@ jobs:
 
       - name: Run AI review
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODELS_TOKEN: ${{ secrets.MODELS_TOKEN }}
         run: |
           DIFF_CONTENT=$(cat pr.trimmed.diff)
           jq -n \
@@ -41,13 +40,17 @@ jobs:
               temperature: 0.2
             }' > payload.json
 
+          echo "=== Calling GitHub Models ==="
           RESPONSE=$(curl -sL -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Authorization: Bearer $MODELS_TOKEN" \
             -H "Content-Type: application/json" \
             "https://models.github.ai/inference/chat/completions" \
             -d @payload.json)
 
-          echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
+          echo "=== Raw response ==="
+          echo "$RESPONSE"
+
+          echo "$RESPONSE" | jq -r '.choices[0].message.content // "AI review could not be generated. See logs."' > review.md
 
       - name: Post review comment
         env:
