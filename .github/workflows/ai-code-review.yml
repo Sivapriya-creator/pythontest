@@ -30,38 +30,4 @@ jobs:
           DIFF_CONTENT=$(cat pr.trimmed.diff)
           jq -n \
             --arg system "You are a senior software engineer performing a code review. Review the following git diff. Point out bugs, security issues, performance problems, and style concerns. Be concise and reference specific files and lines. If the code looks good, say so." \
-            --arg user "$DIFF_CONTENT" \
-            '{
-              model: "openai/gpt-4o-mini",
-              messages: [
-                { role: "system", content: $system },
-                { role: "user", content: $user }
-              ],
-              temperature: 0.2
-            }' > payload.json
-
-          echo "=== Calling GitHub Models ==="
-          RESPONSE=$(curl -sL -X POST \
-            -H "Authorization: Bearer $MODELS_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://models.github.ai/inference/chat/completions" \
-            -d @payload.json)
-
-          echo "=== Raw response ==="
-          echo "$RESPONSE"
-
-          echo "$RESPONSE" | jq -r '.choices[0].message.content // "AI review could not be generated. Check the workflow logs for the raw API response."' > review.md
-
-      - name: Post review comment
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          jq -n --arg body "## 🤖 AI Code Review
-
-$(cat review.md)" '{ body: $body }' > comment.json
-
-          curl -sL -X POST \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
-            -d @comment.json
+            --arg user "
